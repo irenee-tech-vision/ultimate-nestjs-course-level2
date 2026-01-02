@@ -25,7 +25,7 @@ See [docs/client-overview.md](docs/02-client-overview.md) for:
 
 ```bash
 # start the application
-npm run start:dev real-time-communication
+npm run start:dev:rtc
 
 # API tests
 npm run test:e2e:rtc
