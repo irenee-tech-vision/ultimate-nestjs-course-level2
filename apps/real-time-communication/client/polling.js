@@ -2,13 +2,11 @@
 
 function createPoller(fetchFn, onUpdate, intervalMs = 1000) {
   let pollInterval = null;
-  let lastPollTime = null;
 
   function start() {
     if (pollInterval) return;
 
-    lastPollTime = new Date().toISOString();
-
+    let lastPollTime;
     pollInterval = setInterval(async () => {
       try {
         const data = await fetchFn(lastPollTime);
@@ -17,6 +15,7 @@ function createPoller(fetchFn, onUpdate, intervalMs = 1000) {
         if (data.length > 0) {
           onUpdate(data);
         }
+        // hello
       } catch (error) {
         console.error('Polling error:', error);
       }

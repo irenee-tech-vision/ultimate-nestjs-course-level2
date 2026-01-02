@@ -39,6 +39,10 @@ async function fetchTasks() {
 }
 
 async function fetchTaskUpdates(changedSince) {
+  if(!changedSince){
+    return fetchTasks();
+  }
+  
   const url = `${API_BASE}/tasks?changedSince=${encodeURIComponent(changedSince)}&includeDeleted=true`;
   const response = await fetch(url, { headers: getAuthHeaders() });
   return response.json();
