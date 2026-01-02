@@ -18,6 +18,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/hello-world/tsconfig.app.json"
       }
+    },
+    "real-time-communication": {
+      "type": "application",
+      "root": "apps/real-time-communication",
+      "entryFile": "main",
+      "sourceRoot": "apps/real-time-communication/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/real-time-communication/tsconfig.app.json"
+      }
     }
   }
 }
