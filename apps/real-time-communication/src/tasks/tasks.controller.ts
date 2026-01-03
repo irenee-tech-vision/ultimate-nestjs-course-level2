@@ -13,18 +13,20 @@ import {
   Query,
   Sse,
 } from '@nestjs/common';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, merge } from 'rxjs';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { FindTasksQueryDto } from './dto/find-tasks-query.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TasksService } from './tasks.service';
+import { TaskSseEvent } from './events/task-sse.event';
 
 @Controller('tasks')
 export class TasksController implements OnModuleInit, OnModuleDestroy {
   private heartbeat$ = new Subject<MessageEvent>();
   private heartbeatInterval: NodeJS.Timeout;
+  private tasksEvents$ = new Subject<TaskSseEvent>();
 
   constructor(private readonly tasksService: TasksService) {}
 
@@ -44,12 +46,17 @@ export class TasksController implements OnModuleInit, OnModuleDestroy {
 
   @Sse('events')
   events(): Observable<MessageEvent> {
-    return this.heartbeat$.asObservable();
+    return merge(
+      this.heartbeat$.asObservable(),
+      this.tasksEvents$.asObservable(),
+    );
   }
 
   @Post()
   create(@Body() createTaskDto: CreateTaskDto) {
-    return this.tasksService.create(createTaskDto);
+    const task = this.tasksService.create(createTaskDto);
+    this.tasksEvents$.next(new TaskSseEvent('created', task));
+    return task;
   }
 
   @Get()
@@ -72,6 +79,8 @@ export class TasksController implements OnModuleInit, OnModuleDestroy {
     if (!task) {
       throw new NotFoundException(`Task with id ${id} not found`);
     }
+
+    this.tasksEvents$.next(new TaskSseEvent('updated', task));
     return task;
   }
 
@@ -81,6 +90,8 @@ export class TasksController implements OnModuleInit, OnModuleDestroy {
     if (!task) {
       throw new NotFoundException(`Task with id ${id} not found`);
     }
+
+    this.tasksEvents$.next(new TaskSseEvent('updated', task));
     return task;
   }
 
@@ -93,6 +104,8 @@ export class TasksController implements OnModuleInit, OnModuleDestroy {
     if (!task) {
       throw new NotFoundException(`Task with id ${id} not found`);
     }
+
+    this.tasksEvents$.next(new TaskSseEvent('updated', task));
     return task;
   }
 
@@ -102,6 +115,8 @@ export class TasksController implements OnModuleInit, OnModuleDestroy {
     if (!deletedTask) {
       throw new NotFoundException(`Task with id ${id} not found`);
     }
+
+    this.tasksEvents$.next(new TaskSseEvent('deleted', deletedTask));
     return deletedTask;
   }
 }
