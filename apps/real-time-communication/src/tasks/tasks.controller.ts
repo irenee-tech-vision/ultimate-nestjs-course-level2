@@ -3,12 +3,17 @@ import {
   Controller,
   Delete,
   Get,
+  MessageEvent,
   NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit,
   Param,
   Patch,
   Post,
   Query,
+  Sse,
 } from '@nestjs/common';
+import { Observable, Subject } from 'rxjs';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -17,8 +22,30 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { TasksService } from './tasks.service';
 
 @Controller('tasks')
-export class TasksController {
+export class TasksController implements OnModuleInit, OnModuleDestroy {
+  private heartbeat$ = new Subject<MessageEvent>();
+  private heartbeatInterval: NodeJS.Timeout;
+
   constructor(private readonly tasksService: TasksService) {}
+
+  onModuleInit() {
+    this.heartbeatInterval = setInterval(() => {
+      this.heartbeat$.next({
+        id: crypto.randomUUID(),
+        data: { type: 'heartbeat', timestamp: new Date().toISOString() },
+      });
+    }, 3000);
+  }
+
+  onModuleDestroy() {
+    console.log('shutting down');
+    clearInterval(this.heartbeatInterval);
+  }
+
+  @Sse('events')
+  events(): Observable<MessageEvent> {
+    return this.heartbeat$.asObservable();
+  }
 
   @Post()
   create(@Body() createTaskDto: CreateTaskDto) {

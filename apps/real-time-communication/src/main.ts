@@ -12,6 +12,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
+  app.enableShutdownHooks();
   await app.listen(process.env.port ?? 3000);
 }
 
