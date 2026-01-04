@@ -1,5 +1,7 @@
 import { Socket, Server } from 'socket.io';
 import {
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
@@ -7,6 +9,8 @@ import {
   WebSocketServer,
   WsResponse,
 } from '@nestjs/websockets';
+import { TypingStartDto } from './dto/typing-start.dto';
+import { TypingStopDto } from './dto/typing-stop.dto';
 
 @WebSocketGateway()
 export class EventsGateway
@@ -37,5 +41,30 @@ export class EventsGateway
 
   broadcastEvent(event: string, data: any) {
     this.server.emit(event, data);
+  }
+
+  @SubscribeMessage('typing:start')
+  handleTypingStart(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: TypingStartDto,
+  ): void {
+    client.broadcast.emit('typing:update', {
+      taskId: payload.taskId,
+      userId: payload.userId,
+      userName: payload.userName,
+      isTyping: true,
+    });
+  }
+
+  @SubscribeMessage('typing:stop')
+  handleTypingStop(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: TypingStopDto,
+  ): void {
+    client.broadcast.emit('typing:update', {
+      taskId: payload.taskId,
+      userId: payload.userId,
+      isTyping: false,
+    });
   }
 }
