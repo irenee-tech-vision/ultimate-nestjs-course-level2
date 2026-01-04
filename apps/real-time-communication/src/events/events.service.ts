@@ -2,6 +2,12 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { finalize, merge, Subject } from 'rxjs';
 import {
+  COMMENT_EVENTS,
+  CommentCreatedEvent,
+  CommentDeletedEvent,
+  CommentUpdatedEvent,
+} from '../comments/events/comments.event';
+import {
   TASK_EVENTS,
   TaskAssignedEvent,
   TaskCreatedEvent,
@@ -64,6 +70,21 @@ export class EventsService implements OnModuleInit, OnModuleDestroy {
         new TaskSse('assigned', event.task),
       );
     }
+  }
+
+  @OnEvent(COMMENT_EVENTS.CREATED)
+  handleCommentCreated(event: CommentCreatedEvent) {
+    this.broadcast(new CommentSse('created', event.comment));
+  }
+
+  @OnEvent(COMMENT_EVENTS.UPDATED)
+  handleCommentUpdated(event: CommentUpdatedEvent) {
+    this.broadcast(new CommentSse('updated', event.comment));
+  }
+
+  @OnEvent(COMMENT_EVENTS.DELETED)
+  handleCommentDeleted(event: CommentDeletedEvent) {
+    this.broadcast(new CommentSse('deleted', event.comment));
   }
 
   getEventStream() {

@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { EventsService } from '../events/events.service';
-import { CommentSse } from '../events/events/comment.sse';
+import {
+  COMMENT_EVENTS,
+  CommentCreatedEvent,
+  CommentDeletedEvent,
+  CommentUpdatedEvent,
+} from './events/comments.event';
 import {
   filterEntities,
   sortEntitiesByLatestChange,
@@ -16,7 +21,7 @@ import { getSentimentScore } from './get-sentiment-score';
 export class CommentsService {
   constructor(
     private readonly commentsRepository: CommentsRepository,
-    private readonly eventsService: EventsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   create(createCommentDto: CreateCommentDto): Comment {
@@ -29,7 +34,7 @@ export class CommentsService {
       sentimentScore: getSentimentScore(createCommentDto.content),
     });
 
-    this.eventsService.broadcast(new CommentSse('created', comment));
+    this.eventEmitter.emit(COMMENT_EVENTS.CREATED, new CommentCreatedEvent(comment));
     return this.commentsRepository.create(comment);
   }
 
@@ -76,7 +81,7 @@ export class CommentsService {
     });
 
     if (comment) {
-      this.eventsService.broadcast(new CommentSse('updated', comment));
+      this.eventEmitter.emit(COMMENT_EVENTS.UPDATED, new CommentUpdatedEvent(comment));
     }
 
     return comment;
@@ -90,7 +95,7 @@ export class CommentsService {
     });
 
     if (comment) {
-      this.eventsService.broadcast(new CommentSse('deleted', comment));
+      this.eventEmitter.emit(COMMENT_EVENTS.DELETED, new CommentDeletedEvent(comment));
     }
 
     return comment;
