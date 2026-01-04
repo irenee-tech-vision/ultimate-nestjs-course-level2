@@ -1,17 +1,17 @@
 import { MessageEvent } from '@nestjs/common';
-import { Task } from '../entities/task.entity';
+import { Task } from '../../tasks/entities/task.entity';
 
-interface TaskSseEventData {
+interface TaskSseData {
   domain: 'task';
   type: 'created' | 'updated' | 'deleted';
   payload: Task;
 }
 
-export class TaskSseEvent implements MessageEvent {
-  data: TaskSseEventData;
+export class TaskSse implements MessageEvent {
+  data: TaskSseData;
   id: string;
 
-  constructor(type: TaskSseEventData['type'], task: Task) {
+  constructor(type: TaskSseData['type'], task: Task) {
     this.id = crypto.randomUUID();
     this.data = {
       domain: 'task',

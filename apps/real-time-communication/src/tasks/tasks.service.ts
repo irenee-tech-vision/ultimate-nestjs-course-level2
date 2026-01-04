@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { EventsService } from '../events/events.service';
+import { TaskSse } from '../events/events/task.sse';
 import { UsersService } from '../users/users.service';
 import {
   filterEntities,
@@ -17,6 +19,7 @@ export class TasksService {
   constructor(
     private readonly tasksRepository: TasksRepository,
     private readonly usersService: UsersService,
+    private readonly eventsService: EventsService,
   ) {}
 
   create(createTaskDto: CreateTaskDto): Task {
@@ -40,6 +43,7 @@ export class TasksService {
       }),
     });
 
+    this.eventsService.broadcast(new TaskSse('created', task));
     return this.tasksRepository.create(task);
   }
 
@@ -60,18 +64,30 @@ export class TasksService {
   }
 
   update(id: string, updateTaskDto: UpdateTaskDto): Task | undefined {
-    return this.tasksRepository.update(id, {
+    const task = this.tasksRepository.update(id, {
       ...updateTaskDto,
       updatedAt: new Date(),
     });
+
+    if (task) {
+      this.eventsService.broadcast(new TaskSse('updated', task));
+    }
+
+    return task;
   }
 
   remove(id: string): Task | undefined {
     const now = new Date();
-    return this.tasksRepository.update(id, {
+    const task = this.tasksRepository.update(id, {
       deletedAt: now,
       updatedAt: now,
     });
+
+    if (task) {
+      this.eventsService.broadcast(new TaskSse('deleted', task));
+    }
+
+    return task;
   }
 
   assign(id: string, assignTaskDto: AssignTaskDto): Task | undefined {
@@ -83,17 +99,29 @@ export class TasksService {
       assigneeName = user?.name;
     }
 
-    return this.tasksRepository.update(id, {
+    const task = this.tasksRepository.update(id, {
       assigneeId: newAssigneeId,
       assigneeName,
       updatedAt: new Date(),
     });
+
+    if (task) {
+      this.eventsService.broadcast(new TaskSse('updated', task));
+    }
+
+    return task;
   }
 
   changeStatus(id: string, changeStatusDto: ChangeStatusDto): Task | undefined {
-    return this.tasksRepository.update(id, {
+    const task = this.tasksRepository.update(id, {
       status: changeStatusDto.status,
       updatedAt: new Date(),
     });
+
+    if (task) {
+      this.eventsService.broadcast(new TaskSse('updated', task));
+    }
+
+    return task;
   }
 }
