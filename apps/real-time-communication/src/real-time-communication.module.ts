@@ -6,6 +6,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { CommentsModule } from './comments/comments.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
+import { EventsModule } from './events/events.module';
 
 // NOTE: Monorepo path, uncomment when using monorepo
 const CLIENT_ROOT_PATH = join(
@@ -29,6 +30,7 @@ const CLIENT_ROOT_PATH = join(
     UsersModule,
     CommentsModule,
     AuthModule,
+    EventsModule,
   ],
   controllers: [],
 })
