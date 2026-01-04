@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { join } from 'path';
 import { ConfigModule } from '@nestjs/config';
-import { AuthModule } from './auth/auth.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { AuthModule } from './auth/auth.module';
 import { CommentsModule } from './comments/comments.module';
+import { EventsModule } from './events/events.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
-import { EventsModule } from './events/events.module';
 
 // NOTE: Monorepo path, uncomment when using monorepo
 const CLIENT_ROOT_PATH = join(
