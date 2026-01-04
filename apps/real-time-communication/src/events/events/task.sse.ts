@@ -3,7 +3,7 @@ import { Task } from '../../tasks/entities/task.entity';
 
 interface TaskSseData {
   domain: 'task';
-  type: 'created' | 'updated' | 'deleted';
+  type: 'created' | 'updated' | 'deleted' | 'assigned';
   payload: Task;
 }
 

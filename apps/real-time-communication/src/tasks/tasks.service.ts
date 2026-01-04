@@ -99,6 +99,8 @@ export class TasksService {
       assigneeName = user?.name;
     }
 
+    const prevAssigneeId = this.findOne(id)?.assigneeId;
+
     const task = this.tasksRepository.update(id, {
       assigneeId: newAssigneeId,
       assigneeName,
@@ -107,11 +109,25 @@ export class TasksService {
 
     if (task) {
       this.eventsService.broadcast(new TaskSse('updated', task));
+
+      if (newAssigneeId) {
+        this.eventsService.sendToUser(
+          newAssigneeId,
+          new TaskSse('assigned', task),
+        );
+      }
+
+      if (prevAssigneeId) {
+        this.eventsService.sendToUser(
+          prevAssigneeId,
+          new TaskSse('assigned', task),
+        );
+      }
     }
 
     return task;
   }
-
+  
   changeStatus(id: string, changeStatusDto: ChangeStatusDto): Task | undefined {
     const task = this.tasksRepository.update(id, {
       status: changeStatusDto.status,
