@@ -13,13 +13,21 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task } from './entities/task.entity';
 import { getInternalPriority } from './get-internal-priority';
 import { TasksRepository } from './tasks.repository';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  TASK_EVENTS,
+  TaskAssignedEvent,
+  TaskCreatedEvent,
+  TaskDeletedEvent,
+  TaskUpdatedEvent,
+} from './events/tasks.event';
 
 @Injectable()
 export class TasksService {
   constructor(
     private readonly tasksRepository: TasksRepository,
     private readonly usersService: UsersService,
-    private readonly eventsService: EventsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   create(createTaskDto: CreateTaskDto): Task {
@@ -43,7 +51,7 @@ export class TasksService {
       }),
     });
 
-    this.eventsService.broadcast(new TaskSse('created', task));
+    this.eventEmitter.emit(TASK_EVENTS.CREATED, new TaskCreatedEvent(task));
     return this.tasksRepository.create(task);
   }
 
@@ -70,7 +78,7 @@ export class TasksService {
     });
 
     if (task) {
-      this.eventsService.broadcast(new TaskSse('updated', task));
+      this.eventEmitter.emit(TASK_EVENTS.UPDATED, new TaskUpdatedEvent(task));
     }
 
     return task;
@@ -84,7 +92,7 @@ export class TasksService {
     });
 
     if (task) {
-      this.eventsService.broadcast(new TaskSse('deleted', task));
+      this.eventEmitter.emit(TASK_EVENTS.DELETED, new TaskDeletedEvent(task));
     }
 
     return task;
@@ -108,26 +116,12 @@ export class TasksService {
     });
 
     if (task) {
-      this.eventsService.broadcast(new TaskSse('updated', task));
-
-      if (newAssigneeId) {
-        this.eventsService.sendToUser(
-          newAssigneeId,
-          new TaskSse('assigned', task),
-        );
-      }
-
-      if (prevAssigneeId) {
-        this.eventsService.sendToUser(
-          prevAssigneeId,
-          new TaskSse('assigned', task),
-        );
-      }
+      this.eventEmitter.emit(TASK_EVENTS.ASSIGNED, new TaskAssignedEvent(task, prevAssigneeId));
     }
 
     return task;
   }
-  
+
   changeStatus(id: string, changeStatusDto: ChangeStatusDto): Task | undefined {
     const task = this.tasksRepository.update(id, {
       status: changeStatusDto.status,
@@ -135,7 +129,7 @@ export class TasksService {
     });
 
     if (task) {
-      this.eventsService.broadcast(new TaskSse('updated', task));
+      this.eventEmitter.emit(TASK_EVENTS.UPDATED, new TaskUpdatedEvent(task));
     }
 
     return task;

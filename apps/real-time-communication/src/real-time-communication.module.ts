@@ -7,6 +7,7 @@ import { CommentsModule } from './comments/comments.module';
 import { EventsModule } from './events/events.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 // NOTE: Monorepo path, uncomment when using monorepo
 const CLIENT_ROOT_PATH = join(
@@ -22,6 +23,9 @@ const CLIENT_ROOT_PATH = join(
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot({
+      wildcard: true
+    }),
     ServeStaticModule.forRoot({
       rootPath: CLIENT_ROOT_PATH,
     }),

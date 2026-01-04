@@ -1,5 +1,13 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { merge, Observable, Subject, finalize } from 'rxjs';
+import { OnEvent } from '@nestjs/event-emitter';
+import { finalize, merge, Subject } from 'rxjs';
+import {
+  TASK_EVENTS,
+  TaskAssignedEvent,
+  TaskCreatedEvent,
+  TaskDeletedEvent,
+  TaskUpdatedEvent,
+} from '../tasks/events/tasks.event';
 import { SseClient } from './client.interface';
 import { CommentSse } from './events/comment.sse';
 import { HeartbeatSse } from './events/heartbeat.sse';
@@ -22,6 +30,40 @@ export class EventsService implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy() {
     clearInterval(this.heartbeatInterval);
+  }
+
+  @OnEvent(TASK_EVENTS.CREATED)
+  handleTaskCreated(event: TaskCreatedEvent) {
+    this.broadcast(new TaskSse('created', event.task));
+  }
+
+  @OnEvent(TASK_EVENTS.DELETED)
+  handleTaskDeleted(event: TaskDeletedEvent) {
+    this.broadcast(new TaskSse('deleted', event.task));
+  }
+
+  @OnEvent(TASK_EVENTS.UPDATED)
+  handleTaskUpdated(event: TaskUpdatedEvent) {
+    this.broadcast(new TaskSse('updated', event.task));
+  }
+
+  @OnEvent(TASK_EVENTS.ASSIGNED)
+  handleTaskAssigned(event: TaskAssignedEvent) {
+    this.broadcast(new TaskSse('updated', event.task));
+
+    if (event.task.assigneeId) {
+      this.sendToUser(
+        event.task.assigneeId,
+        new TaskSse('assigned', event.task),
+      );
+    }
+
+    if (event.previousAssignee) {
+      this.sendToUser(
+        event.previousAssignee,
+        new TaskSse('assigned', event.task),
+      );
+    }
   }
 
   getEventStream() {

@@ -6,7 +6,7 @@ import { TasksService } from './tasks.service';
 import { EventsModule } from '../events/events.module';
 
 @Module({
-  imports: [UsersModule, EventsModule],
+  imports: [UsersModule],
   controllers: [TasksController],
   providers: [TasksRepository, TasksService],
 })
