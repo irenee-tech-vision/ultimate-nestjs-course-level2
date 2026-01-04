@@ -18,6 +18,7 @@ import { SseClient } from './client.interface';
 import { CommentSse } from './events/comment.sse';
 import { HeartbeatSse } from './events/heartbeat.sse';
 import { TaskSse } from './events/task.sse';
+import { EventsGateway } from './events.gateway';
 
 type DomainSse = TaskSse | CommentSse;
 
@@ -27,6 +28,8 @@ export class EventsService implements OnModuleInit, OnModuleDestroy {
   private broadcast$ = new Subject<DomainSse>();
   private heartbeatInterval: NodeJS.Timeout;
   private clients = new Map<string, SseClient>();
+
+  constructor(private readonly gateway: EventsGateway) {}
 
   onModuleInit() {
     this.heartbeatInterval = setInterval(() => {
@@ -41,6 +44,7 @@ export class EventsService implements OnModuleInit, OnModuleDestroy {
   @OnEvent(TASK_EVENTS.CREATED)
   handleTaskCreated(event: TaskCreatedEvent) {
     this.broadcast(new TaskSse('created', event.task));
+    this.gateway.broadcastEvent('task.created', event.task);
   }
 
   @OnEvent(TASK_EVENTS.DELETED)

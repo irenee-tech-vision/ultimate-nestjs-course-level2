@@ -15,12 +15,20 @@ function createWebSocketClient(onTypingUpdate) {
   } else {
     socket = io();
 
+    // Log client ID once connected
+    socket.on('connect', () => {
+      console.log('WebSocket connected for typing indicators');
+      console.log('Client ID:', socket.id);
+
+      setTimeout(() => {
+        socket.emit('ping', { timestamp: Date.now() });
+      }, 5000);
+    });
+
     // Listen for typing updates from other users
     socket.on('typing:update', (data) => {
       onTypingUpdate(data);
     });
-
-    console.log('WebSocket connected for typing indicators');
   }
 
   function setContext(taskId, userId, userName) {
