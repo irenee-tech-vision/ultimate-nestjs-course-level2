@@ -335,7 +335,10 @@ document.getElementById('addTaskForm').addEventListener('submit', async (e) => {
   };
 
   const newTask = await createTask(taskData);
-  tasks.push(newTask);
+  // Check for duplicate in case SSE event arrived before HTTP response
+  if (!tasks.find(t => t.id === newTask.id)) {
+    tasks.push(newTask);
+  }
   refreshBoard();
   closeAddModal();
 });
