@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { EventsService } from '../events/events.service';
+import { CommentSse } from '../events/events/comment.sse';
 import {
   filterEntities,
   sortEntitiesByLatestChange,
@@ -12,7 +14,10 @@ import { getSentimentScore } from './get-sentiment-score';
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly commentsRepository: CommentsRepository) {}
+  constructor(
+    private readonly commentsRepository: CommentsRepository,
+    private readonly eventsService: EventsService,
+  ) {}
 
   create(createCommentDto: CreateCommentDto): Comment {
     const now = new Date();
@@ -24,6 +29,7 @@ export class CommentsService {
       sentimentScore: getSentimentScore(createCommentDto.content),
     });
 
+    this.eventsService.broadcast(new CommentSse('created', comment));
     return this.commentsRepository.create(comment);
   }
 
@@ -64,17 +70,29 @@ export class CommentsService {
   }
 
   update(id: string, updateCommentDto: UpdateCommentDto): Comment | undefined {
-    return this.commentsRepository.update(id, {
+    const comment = this.commentsRepository.update(id, {
       ...updateCommentDto,
       updatedAt: new Date(),
     });
+
+    if (comment) {
+      this.eventsService.broadcast(new CommentSse('updated', comment));
+    }
+
+    return comment;
   }
 
   remove(id: string): Comment | undefined {
     const now = new Date();
-    return this.commentsRepository.update(id, {
+    const comment = this.commentsRepository.update(id, {
       deletedAt: now,
       updatedAt: now,
     });
+
+    if (comment) {
+      this.eventsService.broadcast(new CommentSse('deleted', comment));
+    }
+
+    return comment;
   }
 }
