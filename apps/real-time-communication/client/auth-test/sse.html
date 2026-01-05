@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SSE Auth Test (No Auth)</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 2em;
+      }
+      pre#output {
+        margin-top: 1.2em;
+        background: #f4f4f6;
+        padding: 1.1em;
+        border-radius: 4px;
+        min-height: 120px;
+        font-size: 13px;
+        white-space: pre-wrap;
+      }
+      .control-row {
+        margin-bottom: 1em;
+      }
+      .toggle-on {
+        background-color: #58b957;
+        color: white;
+      }
+      .toggle-off {
+        background-color: #e64646;
+        color: white;
+      }
+      .toggle-group {
+        margin-bottom: 0.7em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Test SSE Connection With or Without Authentication</h1>
+    <div class="toggle-group">
+      <button id="toggleCookieBtn" class="toggle-off">
+        Set apiKey cookie: OFF
+      </button>
+      <span
+        id="cookieStatusText"
+        style="margin-left: 0.8em; font-size: 13px; color: #444"
+      ></span>
+    </div>
+    <div style="margin-top: 1em" class="control-row">
+      <button id="connectBtn">Connect to SSE Endpoint</button>
+      <button id="disconnectBtn" disabled>Disconnect</button>
+    </div>
+    <pre id="output"></pre>
+    <script>
+      let eventSource = null;
+      let checkState = null;
+
+      // API key config for the demo
+      let useApiKeyCookie = false;
+      const apiKeyValue = 'alice-1234';
+
+      // Toggle apiKey cookie
+      const toggleCookieBtn = document.getElementById('toggleCookieBtn');
+      const cookieStatusText = document.getElementById('cookieStatusText');
+      function updateCookieToggleUI() {
+        if (useApiKeyCookie) {
+          toggleCookieBtn.textContent = 'Set apiKey cookie: ON';
+          toggleCookieBtn.classList.remove('toggle-off');
+          toggleCookieBtn.classList.add('toggle-on');
+          cookieStatusText.textContent = `Cookie value: "${apiKeyValue}"`;
+        } else {
+          toggleCookieBtn.textContent = 'Set apiKey cookie: OFF';
+          toggleCookieBtn.classList.remove('toggle-on');
+          toggleCookieBtn.classList.add('toggle-off');
+          cookieStatusText.textContent = 'Cookie will NOT be sent on connect.';
+        }
+      }
+      function setApiKeyCookie() {
+        document.cookie = 'apiKey=' + apiKeyValue + '; path=/;';
+      }
+      function clearApiKeyCookie() {
+        document.cookie =
+          'apiKey=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      }
+      toggleCookieBtn.onclick = function () {
+        useApiKeyCookie = !useApiKeyCookie;
+        const output = document.getElementById('output');
+        if (useApiKeyCookie) {
+          setApiKeyCookie();
+          output.textContent += `[Cookie toggle] apiKey cookie set to "${apiKeyValue}".\n`;
+        } else {
+          clearApiKeyCookie();
+          output.textContent += '[Cookie toggle] apiKey cookie cleared.\n';
+        }
+        updateCookieToggleUI();
+        showCookieStatus();
+      };
+      updateCookieToggleUI();
+
+      // Helper to update cookie status in the output
+      function showCookieStatus() {
+        const output = document.getElementById('output');
+        const cookie = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('apiKey='));
+        output.textContent +=
+          '[apiKey cookie is now: ' + (cookie ? cookie : '(not set)') + ']\n';
+      }
+
+      // Connect to SSE endpoint
+      document.getElementById('connectBtn').onclick = function () {
+        const output = document.getElementById('output');
+        if (eventSource) {
+          output.textContent += 'Already connected. Please disconnect first.\n';
+          return;
+        }
+        output.textContent += 'Attempting connection to SSE endpoint...\n';
+        showCookieStatus();
+
+        // Attempt to connect to the SSE endpoint, credentials will include current cookies
+        try {
+          eventSource = new EventSource('http://localhost:3000/api/events');
+
+          // Handle successful connection
+          eventSource.onopen = (e) => {
+            output.textContent += 'Connection opened.\n';
+            document.getElementById('disconnectBtn').disabled = false;
+            document.getElementById('connectBtn').disabled = true;
+          };
+
+          // Handle messages from server
+          eventSource.onmessage = (e) => {
+            output.textContent += 'Received message: ' + e.data + '\n';
+          };
+
+          // Handle errors and closed connections
+          eventSource.onerror = (e) => {
+            if (!eventSource) return; // Already disconnected
+            // See readyState: 0 = connecting, 1 = open, 2 = closed
+            if (eventSource.readyState === EventSource.CLOSED) {
+              output.textContent +=
+                'Connection was closed by the server or network (readyState=CLOSED).\n';
+            } else {
+              output.textContent +=
+                'Connection error occurred (could be network or authentication failure).\n';
+            }
+            disconnectSSE();
+          };
+
+          // Optionally, monitor connection state changes
+          checkState = setInterval(() => {
+            if (eventSource && eventSource.readyState === 2) {
+              output.textContent +=
+                'Detected disconnection (readyState=CLOSED).\n';
+              disconnectSSE();
+            }
+          }, 2000);
+        } catch (err) {
+          output.textContent += 'Error: ' + err.message + '\n';
+        }
+      };
+
+      function disconnectSSE() {
+        const output = document.getElementById('output');
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+          output.textContent += 'Disconnected from SSE endpoint.\n';
+        }
+        document.getElementById('disconnectBtn').disabled = true;
+        document.getElementById('connectBtn').disabled = false;
+        if (checkState) {
+          clearInterval(checkState);
+          checkState = null;
+        }
+      }
+
+      document.getElementById('disconnectBtn').onclick = function () {
+        disconnectSSE();
+      };
+
+      // When loading, if there's already an apiKey cookie, set toggle accordingly
+      (function syncCookieToggleWithCookie() {
+        // Just check if browser currently has the apiKey cookie set to the correct value
+        const val = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('apiKey='));
+        if (val && val.endsWith(apiKeyValue)) {
+          useApiKeyCookie = true;
+        } else {
+          useApiKeyCookie = false;
+        }
+        updateCookieToggleUI();
+      })();
+    </script>
+  </body>
+</html>
