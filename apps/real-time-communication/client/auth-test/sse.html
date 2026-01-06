@@ -117,7 +117,7 @@
 
         // Attempt to connect to the SSE endpoint, credentials will include current cookies
         try {
-          eventSource = new EventSource('http://localhost:3000/api/events');
+          eventSource = new EventSource('http://localhost:3000/api/events', { withCredentials: true});
 
           // Handle successful connection
           eventSource.onopen = (e) => {

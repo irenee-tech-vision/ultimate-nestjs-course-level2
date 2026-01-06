@@ -17,7 +17,12 @@ import { extractWsApiKey } from '../auth/ws-api-key.utils';
 import { UsersService } from '../users/users.service';
 
 @UseGuards(WsApiKeyGuard)
-@WebSocketGateway()
+@WebSocketGateway({
+  cors: {
+    origin: 'http://localhost:8080',
+    credentials: true,
+  },
+})
 export class EventsGateway
   implements OnGatewayConnection<Socket>, OnGatewayDisconnect<Socket>
 {

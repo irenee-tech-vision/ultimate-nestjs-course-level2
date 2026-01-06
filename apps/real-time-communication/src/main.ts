@@ -7,6 +7,10 @@ import { RealTimeCommunicationModule } from './real-time-communication.module';
 async function bootstrap() {
   const app = await NestFactory.create(RealTimeCommunicationModule);
 
+  app.enableCors({
+    origin: 'http://localhost:8080',
+    credentials: true,
+  });
   app.use(cookieParser());
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
