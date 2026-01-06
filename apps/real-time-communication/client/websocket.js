@@ -27,7 +27,7 @@ function createWebSocketClient(onTypingUpdate) {
 
     // Listen for typing updates from other users
     socket.on('typing:update', (data) => {
-      onTypingUpdate(data);
+      onTypingUpdate(data.data);
     });
   }
 

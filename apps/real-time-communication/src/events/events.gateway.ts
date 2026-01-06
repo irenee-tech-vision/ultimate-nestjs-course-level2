@@ -1,4 +1,8 @@
-import { UseGuards } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -15,7 +19,11 @@ import { TypingStartDto } from './dto/typing-start.dto';
 import { TypingStopDto } from './dto/typing-stop.dto';
 import { extractWsApiKey } from '../auth/ws-api-key.utils';
 import { UsersService } from '../users/users.service';
+import { PongDto } from './dto/pong.dto';
+import { instanceToPlain } from 'class-transformer';
+import { TypingUpdateDto } from './dto/typing-update.dto';
 
+@UseInterceptors(ClassSerializerInterceptor)
 @UseGuards(WsApiKeyGuard)
 @WebSocketGateway({
   cors: {
@@ -44,27 +52,46 @@ export class EventsGateway
       return;
     }
 
-    this.server.emit('connection', {
-      message: 'New client connected',
-      clientId: client.id,
+    this.broadcastEvent({
+      event: 'connection',
+      data: {
+        message: 'New client connected',
+        clientId: client.id,
+      },
     });
   }
 
   handleDisconnect(client: Socket) {
-    this.server.emit('disconnected', {
-      message: 'Client disconnected',
-      clientId: client.id,
+    this.broadcastEvent({
+      event: 'disconnected',
+      data: {
+        message: 'Client disconnected',
+        clientId: client.id,
+      },
     });
   }
 
   @SubscribeMessage('ping')
-  handlePing(): WsResponse {
+  handlePing(@ConnectedSocket() client: Socket): WsResponse {
     console.log(`Received ping message`);
-    return { event: 'pong', data: { timestamp: Date.now() } };
+    return new PongDto(client.id);
   }
 
-  broadcastEvent(event: string, data: any) {
-    this.server.emit(event, data);
+  broadcastEvent({
+    event,
+    data,
+    client,
+  }: {
+    event: string;
+    data: any;
+    client?: Socket;
+  }) {
+    if (client) {
+      client.broadcast.emit(event, instanceToPlain(data));
+      return;
+    }
+
+    this.server.emit(event, instanceToPlain(data));
   }
 
   @SubscribeMessage('typing:start')
@@ -72,11 +99,16 @@ export class EventsGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: TypingStartDto,
   ): void {
-    client.broadcast.emit('typing:update', {
+    const response = new TypingUpdateDto({
       taskId: payload.taskId,
       userId: payload.userId,
       userName: payload.userName,
       isTyping: true,
+    });
+    this.broadcastEvent({
+      event: response.event,
+      data: response,
+      client,
     });
   }
 
@@ -85,10 +117,16 @@ export class EventsGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: TypingStopDto,
   ): void {
-    client.broadcast.emit('typing:update', {
+    const response = new TypingUpdateDto({
       taskId: payload.taskId,
       userId: payload.userId,
-      isTyping: false,
+      isTyping: true,
+    });
+
+    this.broadcastEvent({
+      event: response.event,
+      data: response,
+      client,
     });
   }
 }

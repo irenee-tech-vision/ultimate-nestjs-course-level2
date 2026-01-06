@@ -44,7 +44,7 @@ export class EventsService implements OnModuleInit, OnModuleDestroy {
   @OnEvent(TASK_EVENTS.CREATED)
   handleTaskCreated(event: TaskCreatedEvent) {
     this.broadcast(new TaskSse('created', event.task));
-    this.gateway.broadcastEvent('task.created', event.task);
+    this.gateway.broadcastEvent({ event: 'task.created', data: event.task });
   }
 
   @OnEvent(TASK_EVENTS.DELETED)
