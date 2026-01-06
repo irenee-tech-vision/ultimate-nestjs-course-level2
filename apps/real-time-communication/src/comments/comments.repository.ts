@@ -46,10 +46,10 @@ export class CommentsRepository implements OnModuleInit {
     if (commentIndex === -1) {
       return undefined;
     }
-    this.comments[commentIndex] = {
+    this.comments[commentIndex] = new Comment({
       ...this.comments[commentIndex],
       ...updates,
-    };
+    });
     return this.comments[commentIndex];
   }
 

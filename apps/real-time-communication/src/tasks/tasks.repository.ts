@@ -40,10 +40,10 @@ export class TasksRepository implements OnModuleInit {
     if (taskIndex === -1) {
       return undefined;
     }
-    this.tasks[taskIndex] = {
+    this.tasks[taskIndex] = new Task({
       ...this.tasks[taskIndex],
       ...updates,
-    };
+    });
     return this.tasks[taskIndex];
   }
 
