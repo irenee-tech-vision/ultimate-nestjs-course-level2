@@ -2,6 +2,8 @@ import {
   ClassSerializerInterceptor,
   UseGuards,
   UseInterceptors,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ConnectedSocket,
@@ -23,6 +25,7 @@ import { PongDto } from './dto/pong.dto';
 import { instanceToPlain } from 'class-transformer';
 import { TypingUpdateDto } from './dto/typing-update.dto';
 
+@UsePipes(ValidationPipe)
 @UseInterceptors(ClassSerializerInterceptor)
 @UseGuards(WsApiKeyGuard)
 @WebSocketGateway({
