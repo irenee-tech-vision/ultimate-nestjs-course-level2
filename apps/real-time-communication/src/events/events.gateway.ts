@@ -1,5 +1,6 @@
 import {
   ClassSerializerInterceptor,
+  UseFilters,
   UseGuards,
   UseInterceptors,
   UsePipes,
@@ -13,6 +14,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
   WsResponse,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -24,7 +26,9 @@ import { UsersService } from '../users/users.service';
 import { PongDto } from './dto/pong.dto';
 import { instanceToPlain } from 'class-transformer';
 import { TypingUpdateDto } from './dto/typing-update.dto';
+import { EventsExceptionFilter } from './events-exceptions.filter';
 
+@UseFilters(EventsExceptionFilter)
 @UsePipes(ValidationPipe)
 @UseInterceptors(ClassSerializerInterceptor)
 @UseGuards(WsApiKeyGuard)
