@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Socket.io WebSocket Auth Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 2em;
+      }
+      pre#output {
+        margin-top: 1.2em;
+        background: #f4f4f6;
+        padding: 1.1em;
+        border-radius: 4px;
+        min-height: 120px;
+        font-size: 13px;
+        white-space: pre-wrap;
+      }
+      .control-row {
+        margin-bottom: 1em;
+      }
+      .toggle-on {
+        background-color: #58b957;
+        color: white;
+      }
+      .toggle-off {
+        background-color: #e64646;
+        color: white;
+      }
+      .toggle-group {
+        margin-bottom: 0.7em;
+      }
+      .transport-selector {
+        margin-bottom: 0.7em;
+        font-size: 14px;
+      }
+    </style>
+    <!-- Load Socket.io from CDN -->
+    <!-- <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script> -->
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+  </head>
+  <body>
+    <h1>
+      Test WebSocket (Socket.io) Connection With or Without Authentication
+    </h1>
+    <div class="toggle-group">
+      <button id="toggleCookieBtn" class="toggle-off">
+        Set apiKey cookie: OFF
+      </button>
+      <span
+        id="cookieStatusText"
+        style="margin-left: 0.8em; font-size: 13px; color: #444"
+      ></span>
+    </div>
+    <div class="toggle-group">
+      <button id="toggleHeaderBtn" class="toggle-off">
+        Set x-api-key header: OFF
+      </button>
+      <span
+        id="headerStatusText"
+        style="margin-left: 0.8em; font-size: 13px; color: #444"
+      ></span>
+    </div>
+    <div class="transport-selector">
+      <label for="transportSelect"><strong>Transports:</strong></label>
+      <select id="transportSelect">
+        <option value="auto">auto (omit transports)</option>
+        <option value="websocket">websocket only</option>
+        <option value="polling">polling only</option>
+        <option value="websocket,polling">websocket,polling (default)</option>
+      </select>
+      <span
+        id="transportStatusText"
+        style="margin-left: 0.8em; font-size: 13px; color: #444"
+      ></span>
+    </div>
+    <div class="control-row" style="margin-top: 1em">
+      <button id="connectBtn">Connect to WebSocket</button>
+      <button id="disconnectBtn" disabled>Disconnect</button>
+      <button id="pingBtn" disabled>Send Ping</button>
+    </div>
+    <pre id="output"></pre>
+    <script>
+      let socket = null;
+      let useApiKeyHeader = false;
+      let useApiKeyCookie = false;
+      let selectedTransports = null;
+
+      const apiKeyValue = 'alice-1234'; // Default demo API key value
+
+      // -- Transport config logic --
+      const transportSelect = document.getElementById('transportSelect');
+      const transportStatusText = document.getElementById(
+        'transportStatusText',
+      );
+      function updateTransportUI() {
+        let val = transportSelect.value;
+        let label = '';
+        switch (val) {
+          case 'websocket':
+            selectedTransports = ['websocket'];
+            label = 'Will use only "websocket" transport';
+            break;
+          case 'polling':
+            selectedTransports = ['polling'];
+            label = 'Will use only "polling" transport';
+            break;
+          case 'websocket,polling':
+            selectedTransports = ['websocket', 'polling'];
+            label = 'Will use ["websocket","polling"]';
+            break;
+          case 'auto':
+            selectedTransports = null;
+            label = 'Will NOT set transports';
+            break;
+          default:
+            selectedTransports = null;
+            label = 'Will NOT set transports';
+            break;
+        }
+        transportStatusText.textContent = label;
+      }
+      transportSelect.addEventListener('change', updateTransportUI);
+      updateTransportUI();
+
+      // Toggle apiKey cookie
+      const toggleCookieBtn = document.getElementById('toggleCookieBtn');
+      const cookieStatusText = document.getElementById('cookieStatusText');
+      function updateCookieToggleUI() {
+        if (useApiKeyCookie) {
+          toggleCookieBtn.textContent = 'Set apiKey cookie: ON';
+          toggleCookieBtn.classList.remove('toggle-off');
+          toggleCookieBtn.classList.add('toggle-on');
+          cookieStatusText.textContent = `Cookie value: "${apiKeyValue}"`;
+        } else {
+          toggleCookieBtn.textContent = 'Set apiKey cookie: OFF';
+          toggleCookieBtn.classList.remove('toggle-on');
+          toggleCookieBtn.classList.add('toggle-off');
+          cookieStatusText.textContent = 'Cookie will NOT be sent on connect.';
+        }
+      }
+      function setApiKeyCookie() {
+        document.cookie = 'apiKey=' + apiKeyValue + '; path=/;';
+      }
+      function clearApiKeyCookie() {
+        document.cookie =
+          'apiKey=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      }
+      toggleCookieBtn.onclick = function () {
+        useApiKeyCookie = !useApiKeyCookie;
+        const output = document.getElementById('output');
+        if (useApiKeyCookie) {
+          setApiKeyCookie();
+          output.textContent += `[Cookie toggle] apiKey cookie set to "${apiKeyValue}".\n`;
+        } else {
+          clearApiKeyCookie();
+          output.textContent += '[Cookie toggle] apiKey cookie cleared.\n';
+        }
+        updateCookieToggleUI();
+        showCookieStatus();
+      };
+      updateCookieToggleUI();
+
+      // Toggle x-api-key header
+      const toggleHeaderBtn = document.getElementById('toggleHeaderBtn');
+      const headerStatusText = document.getElementById('headerStatusText');
+      function updateHeaderToggleUI() {
+        if (useApiKeyHeader) {
+          toggleHeaderBtn.textContent = 'Set x-api-key header: ON';
+          toggleHeaderBtn.classList.remove('toggle-off');
+          toggleHeaderBtn.classList.add('toggle-on');
+          headerStatusText.textContent = `Header value: "${apiKeyValue}"`;
+        } else {
+          toggleHeaderBtn.textContent = 'Set x-api-key header: OFF';
+          toggleHeaderBtn.classList.remove('toggle-on');
+          toggleHeaderBtn.classList.add('toggle-off');
+          headerStatusText.textContent = 'Header will NOT be sent on connect.';
+        }
+      }
+      toggleHeaderBtn.onclick = function () {
+        useApiKeyHeader = !useApiKeyHeader;
+        updateHeaderToggleUI();
+        const output = document.getElementById('output');
+        output.textContent += `[Header toggle] x-api-key ${useApiKeyHeader ? 'will be sent' : 'will NOT be sent'} on connect.\n`;
+      };
+      updateHeaderToggleUI();
+
+      function showCookieStatus() {
+        const output = document.getElementById('output');
+        const cookie = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('apiKey='));
+        output.textContent +=
+          '[apiKey cookie is now: ' + (cookie ? cookie : '(not set)') + ']\n';
+      }
+
+      // Connect to Socket.io WebSocket server
+      document.getElementById('connectBtn').onclick = function () {
+        const output = document.getElementById('output');
+        if (socket && socket.connected) {
+          output.textContent += 'Already connected. Please disconnect first.\n';
+          return;
+        }
+        output.textContent +=
+          'Attempting connection to WebSocket via Socket.io...\n';
+        showCookieStatus();
+
+        try {
+          let opts = {};
+
+          // -- Handle apiKey header toggle --
+          if (useApiKeyHeader) {
+            opts.extraHeaders = {
+              'x-api-key': apiKeyValue,
+            };
+            output.textContent +=
+              '[connect] Will attempt to send x-api-key header: "' +
+              apiKeyValue +
+              '"\n';
+          } else {
+            output.textContent += '[connect] Will NOT send x-api-key header.\n';
+          }
+
+          // -- Handle transports selection --
+          if (selectedTransports && transportSelect.value !== 'auto') {
+            opts.transports = selectedTransports.slice(); // copy
+            output.textContent +=
+              '[connect] transports set to: ' +
+              JSON.stringify(opts.transports) +
+              '\n';
+          } else {
+            output.textContent +=
+              '[connect] transports will NOT be set (Socket.io default)\n';
+          }
+
+          // Ensure cookie is set or cleared before connecting for this demo
+          if (useApiKeyCookie) {
+            setApiKeyCookie();
+            output.textContent +=
+              '[connect] apiKey cookie set to "' +
+              apiKeyValue +
+              '" before connecting.\n';
+          } else {
+            clearApiKeyCookie();
+            output.textContent +=
+              '[connect] apiKey cookie cleared before connecting.\n';
+          }
+
+          // options example
+          // {
+          //   withCredentials: true,
+          //   transports: ['polling', 'websocket'],
+          //   extraHeaders: {
+          //     'x-api-key': apiKeyValue,
+          //   },
+          //   auth: {
+          //     apiKey: apiKeyValue,
+          //   },
+          // }
+          socket = io('http://localhost:3000', {
+            withCredentials: true,
+            ...opts,
+            // auth: {
+            //   apiKey: apiKeyValue,
+            // },
+          });
+
+          socket.on('connect', () => {
+            output.textContent += '[connected] Socket ID: ' + socket.id + '\n';
+            document.getElementById('disconnectBtn').disabled = false;
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('pingBtn').disabled = false;
+          });
+
+          socket.on('connect_error', (err) => {
+            output.textContent += '[connect_error] ' + err.message + '\n';
+            disconnectSocket();
+          });
+
+          socket.on('disconnect', (reason) => {
+            output.textContent += '[disconnected] Reason: ' + reason + '\n';
+            disconnectSocket();
+          });
+
+          // Example: listen for a test event
+          socket.on('typing:update', (data) => {
+            output.textContent +=
+              '[typing:update] ' + JSON.stringify(data) + '\n';
+          });
+
+          // Example: test ping
+          socket.on('pong', (data) => {
+            output.textContent += '[pong] ' + JSON.stringify(data) + '\n';
+          });
+        } catch (err) {
+          output.textContent += 'Error: ' + err.message + '\n';
+        }
+      };
+
+      document.getElementById('disconnectBtn').onclick = disconnectSocket;
+
+      function disconnectSocket() {
+        const output = document.getElementById('output');
+        if (socket) {
+          socket.disconnect();
+          output.textContent += 'Socket disconnected.\n';
+        }
+        document.getElementById('disconnectBtn').disabled = true;
+        document.getElementById('connectBtn').disabled = false;
+        document.getElementById('pingBtn').disabled = true;
+      }
+
+      // Ping button
+      document.getElementById('pingBtn').onclick = function () {
+        const output = document.getElementById('output');
+        if (socket && socket.connected) {
+          const payload = { timestamp: Date.now() };
+          socket.emit('ping', payload);
+          output.textContent +=
+            '[ping] Sent: ' + JSON.stringify(payload) + '\n';
+        } else {
+          output.textContent += '[ping] Cannot send: not connected.\n';
+        }
+      };
+    </script>
+  </body>
+</html>

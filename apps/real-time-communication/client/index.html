@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Board</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-user-switcher" id="headerUserSwitcher">
+        <div class="header-user-avatar" id="headerUserAvatar">--</div>
+        <span class="header-user-name" id="headerUserName">Loading...</span>
+        <svg class="header-user-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+        <select class="header-user-select" id="headerUserSelect" onchange="handleHeaderUserChange()"></select>
+      </div>
+      <div class="header-right">
+        <div class="service-indicators">
+          <button class="service-badge" id="pollingBadge" onclick="togglePollingFromHeader()" title="Polling: Off (click to toggle)">Polling</button>
+          <button class="service-badge" id="sseBadge" onclick="toggleSSEFromHeader()" title="SSE: Off (click to toggle)">SSE</button>
+          <button class="service-badge" id="wsBadge" onclick="toggleWSFromHeader()" title="WebSocket: Off (click to toggle)">WebSocket</button>
+        </div>
+        <button class="header-btn header-btn-primary" id="refreshBtn" onclick="manualRefresh()" title="Refresh tasks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="board-container" id="boardContainer">
+      <div class="board" id="board">
+        <div class="loading">Loading tasks...</div>
+      </div>
+    </div>
+
+    <!-- Side Panel for editing tasks -->
+    <div class="side-panel" id="sidePanel">
+      <div class="panel-header">
+        <h2>Task Details</h2>
+        <button class="panel-close" onclick="closePanel()">&times;</button>
+      </div>
+      <div class="panel-content">
+        <input type="hidden" id="panelTaskId" />
+
+        <div class="panel-section">
+          <div class="panel-section-title">Assignee</div>
+          <div class="assignee-picker">
+            <div class="assignee-avatar unassigned" id="panelAssigneeAvatar">?</div>
+            <div class="assignee-info">
+              <div class="assignee-name" id="panelAssigneeName">Unassigned</div>
+              <div class="assignee-label">Click to change</div>
+            </div>
+            <select class="assignee-select" id="panelAssignee" onchange="handleAssigneeChange()">
+              <option value="">Unassigned</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-section-title">Details</div>
+          <div class="form-group">
+            <label for="panelTitle">Title</label>
+            <input type="text" id="panelTitle" oninput="checkForChanges()" />
+          </div>
+          <div class="form-group">
+            <label for="panelDescription">Description</label>
+            <textarea id="panelDescription" oninput="checkForChanges()"></textarea>
+          </div>
+        </div>
+
+        <div class="panel-section panel-actions">
+          <button class="btn btn-danger" onclick="deleteTask()">Delete Task</button>
+          <button class="btn btn-primary" id="saveBtn" onclick="saveChanges()" disabled>Save Changes</button>
+        </div>
+
+        <div class="panel-section comments-section">
+          <div class="comments-header">
+            <div class="panel-section-title" style="margin-bottom: 0;">Comments</div>
+            <span class="comments-count" id="commentsCount">0</span>
+          </div>
+          <div class="comments-list" id="commentsList"></div>
+          <div class="typing-indicator" id="typingIndicator"></div>
+          <div class="comment-input-container">
+            <textarea class="comment-input" id="commentInput" placeholder="Add a comment..." rows="1" oninput="handleCommentInput()"></textarea>
+            <button class="comment-submit" id="commentSubmit" onclick="submitComment()" disabled>Post</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Task Modal -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal">
+      <h2>Add New Task</h2>
+      <form id="addTaskForm">
+        <div class="form-group">
+          <label for="addTitle">Title</label>
+          <input type="text" id="addTitle" name="title" required />
+        </div>
+        <div class="form-group">
+          <label for="addDescription">Description</label>
+          <textarea id="addDescription" name="description"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="addAssignee">Assignee</label>
+          <select id="addAssignee" name="assignee">
+            <option value="">Unassigned</option>
+          </select>
+        </div>
+        <input type="hidden" id="addStatus" name="status" value="to-do" />
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+  <script src="api.js"></script>
+  <script src="polling.js"></script>
+  <script src="sse.js"></script>
+  <!-- Uncomment when Socket.io gateway is implemented on the backend -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="websocket.js"></script>
+  <script src="ui.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
