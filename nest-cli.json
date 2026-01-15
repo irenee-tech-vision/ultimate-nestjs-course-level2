@@ -10,6 +10,15 @@
   "monorepo": true,
   "root": "apps/hello-world",
   "projects": {
+    "caching": {
+      "type": "application",
+      "root": "apps/caching",
+      "entryFile": "main",
+      "sourceRoot": "apps/caching/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/caching/tsconfig.app.json"
+      }
+    },
     "hello-world": {
       "type": "application",
       "root": "apps/hello-world",

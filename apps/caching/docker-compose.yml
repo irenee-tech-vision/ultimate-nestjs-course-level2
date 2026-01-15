@@ -1,0 +1,12 @@
+services:
+  mongo:
+    container_name: caching-mongo
+    image: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - caching_mongo_data:/data/db
+
+volumes:
+  caching_mongo_data:
+    driver: local
