@@ -21,6 +21,7 @@ export class FeatureFlagsController {
     return this.featureFlagsService.create(createFeatureFlagDto);
   }
 
+  @Header("Cache-Control", "public, max-age=60")
   @Get()
   findAll() {
     return this.featureFlagsService.findAll();

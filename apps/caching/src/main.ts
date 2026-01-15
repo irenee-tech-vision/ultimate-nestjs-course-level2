@@ -13,7 +13,9 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-
+  // Explicitly disable ETag on the underlying Express app
+  // app.getHttpAdapter().getInstance().set('etag', false);
+  
   await app.listen(process.env.port ?? 3000);
 }
 bootstrap();
