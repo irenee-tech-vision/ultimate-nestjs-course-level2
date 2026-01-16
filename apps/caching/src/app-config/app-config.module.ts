@@ -10,6 +10,9 @@ import { AppConfigService } from './app-config.service';
         MONGO_URI: Joi.string()
           .optional()
           .default('mongodb://localhost:27017/feature-flags'),
+        CACHE_TTL: Joi.number()
+          .optional()
+          .default(60000)
       }),
     }),
   ],

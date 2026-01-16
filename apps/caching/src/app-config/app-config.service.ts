@@ -12,4 +12,8 @@ export class AppConfigService {
   get seedData(): boolean {
     return this.configService.get<string>('SEED_DATA') === 'true';
   }
+
+  get cacheTtl(): number {
+    return Number(this.configService.get<string>('CACHE_TTL'));
+  }
 }

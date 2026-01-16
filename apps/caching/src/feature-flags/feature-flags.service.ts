@@ -1,16 +1,22 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { ObjectId } from 'mongodb';
 import { MongoRepository } from '../mongo-connection/mongo.repository';
 import { OverridesService } from '../overrides/overrides.service';
 import { CreateFeatureFlagDto } from './dto/create-feature-flag.dto';
 import { UpdateFeatureFlagDto } from './dto/update-feature-flag.dto';
 import { FeatureFlag } from './entities/feature-flag.entity';
+import { FeatureFlagsCacheService } from './feature-flags-cache.service';
+import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable()
 export class FeatureFlagsService {
+  private readonly logger = new Logger(FeatureFlagsService.name);
+
   constructor(
     private readonly repository: MongoRepository<FeatureFlag>,
     private readonly overridesService: OverridesService,
+    private readonly cacheService: FeatureFlagsCacheService,
+    private readonly appConfigService: AppConfigService,
   ) {}
 
   async create(createFeatureFlagDto: CreateFeatureFlagDto) {
@@ -23,23 +29,59 @@ export class FeatureFlagsService {
         `Feature flag with name '${createFeatureFlagDto.name}' already exists`,
       );
     }
-    
+
     const flag = await this.repository.create(
       createFeatureFlagDto as FeatureFlag,
     );
+
+    this.cacheService.del('FeatureFlag:all');
+
     return new FeatureFlag(flag);
   }
 
   async findAll() {
-    const flags = await this.repository.findAll();
-    return flags.map((flag) => new FeatureFlag(flag));
+    const cacheKey = 'FeatureFlag:all';
+    const cached = this.cacheService.get<FeatureFlag[]>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache HIT for key: ${cacheKey}`);
+      return cached;
+    }
+
+    this.logger.debug(`Cache MISS for key: ${cacheKey}`);
+    const results = await this.repository.findAll();
+    const flags = results.map((flag) => new FeatureFlag(flag));
+
+    this.cacheService.set<FeatureFlag[]>(
+      cacheKey,
+      flags,
+      this.appConfigService.cacheTtl,
+    );
+    this.logger.debug(`Cache SET for key: ${cacheKey}`);
+    return flags;
   }
 
   async findOne(id: string) {
-    const flag = await this.repository.findOneBy({ _id: new ObjectId(id) });
-    return flag ? new FeatureFlag(flag) : null;
-  }
+    const cacheKey = `FeatureFlag:${id}`;
+    const cached = this.cacheService.get<FeatureFlag>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache HIT for key: ${cacheKey}`);
+      return cached;
+    }
 
+    this.logger.debug(`Cache MISS for key: ${cacheKey}`);
+    const result = await this.repository.findOneBy({ _id: new ObjectId(id) });
+    if (result) {
+      const flag = new FeatureFlag(result);
+      this.cacheService.set<FeatureFlag>(
+        cacheKey,
+        flag,
+        this.appConfigService.cacheTtl,
+      );
+      this.logger.debug(`Cache SET for key: ${cacheKey}`);
+      return flag;
+    }
+    return null;
+  }
 
   async update(id: string, updateFeatureFlagDto: UpdateFeatureFlagDto) {
     // If name is being updated, check for conflicts
@@ -58,11 +100,19 @@ export class FeatureFlagsService {
       { _id: new ObjectId(id) },
       updateFeatureFlagDto as Partial<FeatureFlag>,
     );
+
+    this.cacheService.del('FeatureFlag:all');
+    this.cacheService.del(`FeatureFlag:${id}`);
+
     return flag ? new FeatureFlag(flag) : null;
   }
 
   async remove(id: string) {
     const flag = await this.repository.deleteOneBy({ _id: new ObjectId(id) });
+
+    this.cacheService.del('FeatureFlag:all');
+    this.cacheService.del(`FeatureFlag:${id}`);
+
     return flag ? new FeatureFlag(flag) : null;
   }
 
