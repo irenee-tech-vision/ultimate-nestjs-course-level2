@@ -10,6 +10,8 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { CachingController } from './caching.controller';
 import { AppConfigModule } from './app-config/app-config.module';
 import { AppConfigService } from './app-config/app-config.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { AppCachingModule } from './app-caching/app-caching.module';
 
 const CLIENT_ROOT_PATH = join(
   __dirname,
@@ -21,13 +23,8 @@ const CLIENT_ROOT_PATH = join(
 
 @Module({
   imports: [
-    CacheModule.registerAsync({
-      isGlobal: true,
-      imports: [AppConfigModule],
-      useFactory: (appConfig: AppConfigService) => ({
-        ttl: appConfig.cacheTtl,
-      }),
-      inject: [AppConfigService],
+    EventEmitterModule.forRoot({
+      wildcard: true,
     }),
     ServeStaticModule.forRoot({
       rootPath: CLIENT_ROOT_PATH,
@@ -37,6 +34,7 @@ const CLIENT_ROOT_PATH = join(
     OverridesModule,
     UsersModule,
     AuthModule,
+    AppCachingModule,
   ],
   controllers: [CachingController],
   providers: [],

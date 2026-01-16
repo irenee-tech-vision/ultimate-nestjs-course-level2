@@ -6,6 +6,13 @@ import { OverridesService } from '../overrides/overrides.service';
 import { CreateFeatureFlagDto } from './dto/create-feature-flag.dto';
 import { UpdateFeatureFlagDto } from './dto/update-feature-flag.dto';
 import { FeatureFlag } from './entities/feature-flag.entity';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  FEATURE_FLAG_EVENTS,
+  FeatureFlagCreatedEvent,
+  FeatureFlagDeletedEvent,
+  FeatureFlagUpdatedEvent,
+} from './events/feature-flag.events';
 
 @Injectable()
 export class FeatureFlagsService {
@@ -14,6 +21,7 @@ export class FeatureFlagsService {
   constructor(
     private readonly repository: MongoRepository<FeatureFlag>,
     private readonly overridesService: OverridesService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(createFeatureFlagDto: CreateFeatureFlagDto) {
@@ -27,11 +35,16 @@ export class FeatureFlagsService {
       );
     }
 
-    const flag = await this.repository.create(
+    const result = await this.repository.create(
       createFeatureFlagDto as FeatureFlag,
     );
+    const flag = new FeatureFlag(result);
 
-    return new FeatureFlag(flag);
+    this.eventEmitter.emit(
+      FEATURE_FLAG_EVENTS.CREATED,
+      new FeatureFlagCreatedEvent(flag),
+    );
+    return flag;
   }
 
   async findAll() {
@@ -61,18 +74,33 @@ export class FeatureFlagsService {
       }
     }
 
-    const flag = await this.repository.updateOneBy(
+    const result = await this.repository.updateOneBy(
       { _id: new ObjectId(id) },
       updateFeatureFlagDto as Partial<FeatureFlag>,
     );
 
-    return flag ? new FeatureFlag(flag) : null;
+    const flag = result ? new FeatureFlag(result) : null;
+
+    if (flag) {
+      this.eventEmitter.emit(
+        FEATURE_FLAG_EVENTS.UPDATED,
+        new FeatureFlagUpdatedEvent(flag),
+      );
+    }
+    return flag;
   }
 
   async remove(id: string) {
-    const flag = await this.repository.deleteOneBy({ _id: new ObjectId(id) });
+    const result = await this.repository.deleteOneBy({ _id: new ObjectId(id) });
 
-    return flag ? new FeatureFlag(flag) : null;
+    const flag = result ? new FeatureFlag(result) : null;
+
+    if (flag) {
+      this.eventEmitter.emit(
+        FEATURE_FLAG_EVENTS.DELETED,
+        new FeatureFlagDeletedEvent(flag),
+      );
+    }
   }
 
   async resolveForUser(environment: string, userId: string) {
