@@ -15,6 +15,8 @@ import { CreateFeatureFlagDto } from './dto/create-feature-flag.dto';
 import { UpdateFeatureFlagDto } from './dto/update-feature-flag.dto';
 import { FeatureFlagsCacheInterceptor } from './feature-flags-cache.interceptor';
 import { FeatureFlagsService } from './feature-flags.service';
+import { CacheInvalidateInterceptor } from '../common/interceptors/cache-invalidate.interceptor';
+import { CacheInvalidate } from '../common/decorators/cache-invalidate.decorator';
 
 @Controller('admin/feature-flags')
 @UseInterceptors(FeatureFlagsCacheInterceptor)
@@ -23,6 +25,8 @@ export class FeatureFlagsController {
   constructor(private readonly featureFlagsService: FeatureFlagsService) {}
 
   @Post()
+  @CacheInvalidate('FeatureFlag:all')
+  @UseInterceptors(CacheInvalidateInterceptor)
   create(@Body() createFeatureFlagDto: CreateFeatureFlagDto) {
     return this.featureFlagsService.create(createFeatureFlagDto);
   }
@@ -39,6 +43,8 @@ export class FeatureFlagsController {
     return this.featureFlagsService.findOne(id);
   }
 
+  @CacheInvalidate('FeatureFlag:all', (req) => [`FeatureFlag:${req.params.id}`])
+  @UseInterceptors(CacheInvalidateInterceptor)
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -47,6 +53,8 @@ export class FeatureFlagsController {
     return this.featureFlagsService.update(id, updateFeatureFlagDto);
   }
 
+  @CacheInvalidate('FeatureFlag:all', (req) => [`FeatureFlag:${req.params.id}`])
+  @UseInterceptors(CacheInvalidateInterceptor)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.featureFlagsService.remove(id);

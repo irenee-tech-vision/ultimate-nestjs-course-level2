@@ -14,7 +14,6 @@ export class FeatureFlagsService {
   constructor(
     private readonly repository: MongoRepository<FeatureFlag>,
     private readonly overridesService: OverridesService,
-    private readonly cacheManager: Cache,
   ) {}
 
   async create(createFeatureFlagDto: CreateFeatureFlagDto) {
@@ -31,8 +30,6 @@ export class FeatureFlagsService {
     const flag = await this.repository.create(
       createFeatureFlagDto as FeatureFlag,
     );
-
-    this.cacheManager.del('FeatureFlag:all');
 
     return new FeatureFlag(flag);
   }
@@ -69,17 +66,11 @@ export class FeatureFlagsService {
       updateFeatureFlagDto as Partial<FeatureFlag>,
     );
 
-    this.cacheManager.del('FeatureFlag:all');
-    this.cacheManager.del(`FeatureFlag:${id}`);
-
     return flag ? new FeatureFlag(flag) : null;
   }
 
   async remove(id: string) {
     const flag = await this.repository.deleteOneBy({ _id: new ObjectId(id) });
-
-    this.cacheManager.del('FeatureFlag:all');
-    this.cacheManager.del(`FeatureFlag:${id}`);
 
     return flag ? new FeatureFlag(flag) : null;
   }
