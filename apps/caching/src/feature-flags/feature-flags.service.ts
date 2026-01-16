@@ -1,3 +1,4 @@
+import { Cache } from '@nestjs/cache-manager';
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { ObjectId } from 'mongodb';
 import { MongoRepository } from '../mongo-connection/mongo.repository';
@@ -5,9 +6,6 @@ import { OverridesService } from '../overrides/overrides.service';
 import { CreateFeatureFlagDto } from './dto/create-feature-flag.dto';
 import { UpdateFeatureFlagDto } from './dto/update-feature-flag.dto';
 import { FeatureFlag } from './entities/feature-flag.entity';
-import { FeatureFlagsCacheService } from './feature-flags-cache.service';
-import { AppConfigService } from '../app-config/app-config.service';
-import { Cache } from '@nestjs/cache-manager';
 
 @Injectable()
 export class FeatureFlagsService {
@@ -16,8 +14,6 @@ export class FeatureFlagsService {
   constructor(
     private readonly repository: MongoRepository<FeatureFlag>,
     private readonly overridesService: OverridesService,
-    private readonly cacheService: FeatureFlagsCacheService,
-    private readonly appConfigService: AppConfigService,
     private readonly cacheManager: Cache,
   ) {}
 
@@ -82,8 +78,8 @@ export class FeatureFlagsService {
   async remove(id: string) {
     const flag = await this.repository.deleteOneBy({ _id: new ObjectId(id) });
 
-    this.cacheService.del('FeatureFlag:all');
-    this.cacheService.del(`FeatureFlag:${id}`);
+    this.cacheManager.del('FeatureFlag:all');
+    this.cacheManager.del(`FeatureFlag:${id}`);
 
     return flag ? new FeatureFlag(flag) : null;
   }
