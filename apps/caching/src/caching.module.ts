@@ -6,6 +6,10 @@ import { MongoConnectionModule } from './mongo-connection/mongo-connection.modul
 import { OverridesModule } from './overrides/overrides.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { CachingController } from './caching.controller';
+import { AppConfigModule } from './app-config/app-config.module';
+import { AppConfigService } from './app-config/app-config.service';
 
 const CLIENT_ROOT_PATH = join(
   __dirname,
@@ -17,6 +21,14 @@ const CLIENT_ROOT_PATH = join(
 
 @Module({
   imports: [
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [AppConfigModule],
+      useFactory: (appConfig: AppConfigService) => ({
+        ttl: appConfig.cacheTtl,
+      }),
+      inject: [AppConfigService],
+    }),
     ServeStaticModule.forRoot({
       rootPath: CLIENT_ROOT_PATH,
     }),
@@ -26,7 +38,7 @@ const CLIENT_ROOT_PATH = join(
     UsersModule,
     AuthModule,
   ],
-  controllers: [],
+  controllers: [CachingController],
   providers: [],
 })
 export class CachingModule {}

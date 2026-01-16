@@ -7,6 +7,7 @@ import { UpdateFeatureFlagDto } from './dto/update-feature-flag.dto';
 import { FeatureFlag } from './entities/feature-flag.entity';
 import { FeatureFlagsCacheService } from './feature-flags-cache.service';
 import { AppConfigService } from '../app-config/app-config.service';
+import { Cache } from '@nestjs/cache-manager';
 
 @Injectable()
 export class FeatureFlagsService {
@@ -17,6 +18,7 @@ export class FeatureFlagsService {
     private readonly overridesService: OverridesService,
     private readonly cacheService: FeatureFlagsCacheService,
     private readonly appConfigService: AppConfigService,
+    private readonly cacheManager: Cache,
   ) {}
 
   async create(createFeatureFlagDto: CreateFeatureFlagDto) {
@@ -34,51 +36,21 @@ export class FeatureFlagsService {
       createFeatureFlagDto as FeatureFlag,
     );
 
-    this.cacheService.del('FeatureFlag:all');
+    this.cacheManager.del('FeatureFlag:all');
 
     return new FeatureFlag(flag);
   }
 
   async findAll() {
-    const cacheKey = 'FeatureFlag:all';
-    const cached = this.cacheService.get<FeatureFlag[]>(cacheKey);
-    if (cached) {
-      this.logger.debug(`Cache HIT for key: ${cacheKey}`);
-      return cached;
-    }
-
-    this.logger.debug(`Cache MISS for key: ${cacheKey}`);
     const results = await this.repository.findAll();
     const flags = results.map((flag) => new FeatureFlag(flag));
-
-    this.cacheService.set<FeatureFlag[]>(
-      cacheKey,
-      flags,
-      this.appConfigService.cacheTtl,
-    );
-    this.logger.debug(`Cache SET for key: ${cacheKey}`);
     return flags;
   }
 
   async findOne(id: string) {
-    const cacheKey = `FeatureFlag:${id}`;
-    const cached = this.cacheService.get<FeatureFlag>(cacheKey);
-    if (cached) {
-      this.logger.debug(`Cache HIT for key: ${cacheKey}`);
-      return cached;
-    }
-
-    this.logger.debug(`Cache MISS for key: ${cacheKey}`);
     const result = await this.repository.findOneBy({ _id: new ObjectId(id) });
     if (result) {
-      const flag = new FeatureFlag(result);
-      this.cacheService.set<FeatureFlag>(
-        cacheKey,
-        flag,
-        this.appConfigService.cacheTtl,
-      );
-      this.logger.debug(`Cache SET for key: ${cacheKey}`);
-      return flag;
+      return new FeatureFlag(result);
     }
     return null;
   }
@@ -101,8 +73,8 @@ export class FeatureFlagsService {
       updateFeatureFlagDto as Partial<FeatureFlag>,
     );
 
-    this.cacheService.del('FeatureFlag:all');
-    this.cacheService.del(`FeatureFlag:${id}`);
+    this.cacheManager.del('FeatureFlag:all');
+    this.cacheManager.del(`FeatureFlag:${id}`);
 
     return flag ? new FeatureFlag(flag) : null;
   }

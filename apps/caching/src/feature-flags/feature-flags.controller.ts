@@ -7,12 +7,15 @@ import {
   Param,
   Delete,
   Header,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FeatureFlagsService } from './feature-flags.service';
 import { CreateFeatureFlagDto } from './dto/create-feature-flag.dto';
 import { UpdateFeatureFlagDto } from './dto/update-feature-flag.dto';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('admin/feature-flags')
+@UseInterceptors(CacheInterceptor)
 export class FeatureFlagsController {
   constructor(private readonly featureFlagsService: FeatureFlagsService) {}
 
@@ -27,6 +30,7 @@ export class FeatureFlagsController {
     return this.featureFlagsService.findAll();
   }
 
+  @CacheTTL(5000)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.featureFlagsService.findOne(id);
