@@ -23,6 +23,7 @@
     "test:e2e:rtc": "jest --config ./apps/real-time-communication/test/jest-e2e.json"
   },
   "dependencies": {
+    "@keyv/redis": "^5.1.5",
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",

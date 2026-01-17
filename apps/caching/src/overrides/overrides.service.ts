@@ -100,6 +100,12 @@ export class OverridesService {
       ...createDto,
       userId,
     } as Override);
+
+    this.eventEmitter.emit(
+      OVERRIDE_EVENTS.CREATED,
+      new OverrideCreatedEvent(override),
+    );
+
     return new Override(override);
   }
 
@@ -108,19 +114,39 @@ export class OverridesService {
     updateDto: UpdateOverrideAsUserDto,
     userId: string,
   ) {
-    const override = await this.repository.updateOneBy(
+    const result = await this.repository.updateOneBy(
       { _id: new ObjectId(id), userId },
       updateDto as Partial<Override>,
     );
-    return override ? new Override(override) : null;
+
+    const override = result ? new Override(result) : null;
+
+    if (override) {
+      this.eventEmitter.emit(
+        OVERRIDE_EVENTS.UPDATED,
+        new OverrideUpdatedEvent(override),
+      );
+    }
+
+    return override;
   }
 
   async removeByIdAndUserId(id: string, userId: string) {
-    const override = await this.repository.deleteOneBy({
+    const result = await this.repository.deleteOneBy({
       _id: new ObjectId(id),
       userId,
     });
-    return override ? new Override(override) : null;
+
+    const override = result ? new Override(result) : null;
+
+    if (override) {
+      this.eventEmitter.emit(
+        OVERRIDE_EVENTS.DELETED,
+        new OverrideDeletedEvent(override),
+      );
+    }
+
+    return override;
   }
 
   async findByEnvironmentForUser(environment: string, userId: string) {

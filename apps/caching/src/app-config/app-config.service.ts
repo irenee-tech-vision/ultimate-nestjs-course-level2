@@ -16,4 +16,8 @@ export class AppConfigService {
   get cacheTtl(): number {
     return Number(this.configService.get<string>('CACHE_TTL'));
   }
+
+  get redisUrl(): string {
+    return this.configService.get<string>('REDIS_URL')!;
+  }
 }

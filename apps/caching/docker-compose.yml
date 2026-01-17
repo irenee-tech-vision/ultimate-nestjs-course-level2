@@ -6,7 +6,16 @@ services:
       - 27017:27017
     volumes:
       - caching_mongo_data:/data/db
+  redis:
+    container_name: caching-redis
+    image: redis:7-alpine
+    ports:
+      - 6379:6379
+    volumes:
+      - caching_redis_data:/data
 
 volumes:
   caching_mongo_data:
     driver: local
+  caching_redis_data:
+    driver: local  
