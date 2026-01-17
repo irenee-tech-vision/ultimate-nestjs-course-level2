@@ -1,5 +1,5 @@
 import { Cache } from '@nestjs/cache-manager';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
   FEATURE_FLAG_EVENTS,
@@ -13,12 +13,17 @@ import {
   OverrideDeletedEvent,
   OverrideUpdatedEvent,
 } from '../overrides/events/override.events';
+import { REDIS_CLIENT } from '../redis/redis.module';
+import Redis from 'ioredis';
 
 @Injectable()
 export class CacheInvalidationListener {
   private readonly logger = new Logger(CacheInvalidationListener.name);
 
-  constructor(private readonly cacheManager: Cache) {}
+  constructor(
+    private readonly cacheManager: Cache,
+    @Inject(REDIS_CLIENT) private redisClient: Redis,
+  ) {}
 
   @OnEvent(FEATURE_FLAG_EVENTS.ALL)
   async handleFeatureFlagEvent(
@@ -53,31 +58,34 @@ export class CacheInvalidationListener {
   }
 
   private async clearAllOverrideCaches() {
-    const keys = await this.getAllUserOverrideCacheKeys();
+    const keys = await this.scanKeys('keyv::keyv:UserFeatureFlags:*');
     if (keys.length === 0) return;
 
-    await this.cacheManager.mdel(keys);
+    await this.redisClient.del(...keys);
     this.logger.debug(
       `Invalidated ${keys.length} UserFeatureFlags:* cache entries`,
     );
   }
 
-  private async getAllUserOverrideCacheKeys() {
-    const store = this.cacheManager.stores[0];
-    if (!store?.iterator) {
-      this.logger.warn(
-        'Cache store does not support iteration; unable to get user override cache keys.',
-      );
-      return [];
-    }
-
+  private async scanKeys(pattern: string): Promise<string[]> {
     const keys: string[] = [];
-    for await (const [key] of store.iterator({})) {
-      if (typeof key !== 'string') continue;
-      if (!key.startsWith('UserFeatureFlags:')) continue;
+    let cursor = '0';
 
-      keys.push(key);
-    }
+    do {
+      const [nextCursor, foundKeys] = await this.redisClient.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100,
+      );
+      cursor = nextCursor;
+
+      console.log('foundKeys', foundKeys);
+      console.log('cursor', cursor);
+
+      keys.push(...foundKeys);
+    } while (cursor !== '0');
 
     return keys;
   }

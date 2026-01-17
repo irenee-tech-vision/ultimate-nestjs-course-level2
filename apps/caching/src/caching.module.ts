@@ -1,17 +1,14 @@
 import { Module } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { AppCachingModule } from './app-caching/app-caching.module';
+import { AuthModule } from './auth/auth.module';
+import { CachingController } from './caching.controller';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { MongoConnectionModule } from './mongo-connection/mongo-connection.module';
 import { OverridesModule } from './overrides/overrides.module';
 import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
-import { CacheModule } from '@nestjs/cache-manager';
-import { CachingController } from './caching.controller';
-import { AppConfigModule } from './app-config/app-config.module';
-import { AppConfigService } from './app-config/app-config.service';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { AppCachingModule } from './app-caching/app-caching.module';
 
 const CLIENT_ROOT_PATH = join(
   __dirname,
