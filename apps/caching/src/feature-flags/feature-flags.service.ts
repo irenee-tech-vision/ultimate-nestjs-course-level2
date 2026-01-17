@@ -87,6 +87,7 @@ export class FeatureFlagsService {
         new FeatureFlagUpdatedEvent(flag),
       );
     }
+    
     return flag;
   }
 
@@ -101,6 +102,8 @@ export class FeatureFlagsService {
         new FeatureFlagDeletedEvent(flag),
       );
     }
+
+    return flag;
   }
 
   async resolveForUser(environment: string, userId: string) {

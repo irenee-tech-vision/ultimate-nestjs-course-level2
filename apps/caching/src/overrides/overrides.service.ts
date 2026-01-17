@@ -1,21 +1,38 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ObjectId } from 'mongodb';
 import { MongoRepository } from '../mongo-connection/mongo.repository';
-import { CreateOverrideDto } from './dto/create-override.dto';
 import { CreateOverrideAsUserDto } from './dto/create-override-as-user.dto';
-import { UpdateOverrideDto } from './dto/update-override.dto';
+import { CreateOverrideDto } from './dto/create-override.dto';
 import { UpdateOverrideAsUserDto } from './dto/update-override-as-user.dto';
+import { UpdateOverrideDto } from './dto/update-override.dto';
 import { Override } from './entities/override.entity';
+import {
+  OVERRIDE_EVENTS,
+  OverrideCreatedEvent,
+  OverrideDeletedEvent,
+  OverrideUpdatedEvent,
+} from './events/override.events';
 
 @Injectable()
 export class OverridesService {
-  constructor(private readonly repository: MongoRepository<Override>) {}
+  constructor(
+    private readonly repository: MongoRepository<Override>,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   // ==================== ADMIN METHODS ====================
 
   async create(createOverrideDto: CreateOverrideDto) {
-    const override = await this.repository.create(createOverrideDto as Override);
-    return new Override(override);
+    const result = await this.repository.create(createOverrideDto as Override);
+    const override = new Override(result);
+
+    this.eventEmitter.emit(
+      OVERRIDE_EVENTS.CREATED,
+      new OverrideCreatedEvent(override),
+    );
+
+    return override;
   }
 
   async findAll() {
@@ -29,18 +46,38 @@ export class OverridesService {
   }
 
   async update(id: string, updateOverrideDto: UpdateOverrideDto) {
-    const override = await this.repository.updateOneBy(
+    const result = await this.repository.updateOneBy(
       { _id: new ObjectId(id) },
       updateOverrideDto as Partial<Override>,
     );
-    return override ? new Override(override) : null;
+
+    const override = result ? new Override(result) : null;
+
+    if (override) {
+      this.eventEmitter.emit(
+        OVERRIDE_EVENTS.UPDATED,
+        new OverrideUpdatedEvent(override),
+      );
+    }
+
+    return override;
   }
 
   async remove(id: string) {
-    const override = await this.repository.deleteOneBy({
+    const result = await this.repository.deleteOneBy({
       _id: new ObjectId(id),
     });
-    return override ? new Override(override) : null;
+
+    const override = result ? new Override(result) : null;
+
+    if (override) {
+      this.eventEmitter.emit(
+        OVERRIDE_EVENTS.DELETED,
+        new OverrideDeletedEvent(override),
+      );
+    }
+
+    return override;
   }
 
   // ==================== USER-SCOPED METHODS ====================
