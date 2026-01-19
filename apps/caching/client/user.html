@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feature Flags - User Portal</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="user-switcher" id="userSwitcher">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span class="user-name" id="userName">Loading...</span>
+          <span class="user-chevron">▼</span>
+          <select class="user-select" id="userSelect"></select>
+        </div>
+        <div class="env-switcher" id="envSwitcher">
+          <span class="env-badge-display" id="envBadgeDisplay">DEV</span>
+          <span class="env-chevron">▼</span>
+          <select class="env-select" id="envSelect">
+            <option value="development">Development</option>
+            <option value="staging">Staging</option>
+            <option value="production">Production</option>
+          </select>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="index.html" class="btn btn-ghost">← Admin Panel</a>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+      <div id="flagsList" class="flags-list">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <div>Loading feature flags...</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Side Panel -->
+    <aside class="side-panel" id="sidePanel"></aside>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal" id="modal"></div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="ui.js"></script>
+  <script src="user.js"></script>
+</body>
+</html>

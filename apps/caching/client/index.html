@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feature Flags - Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="user-switcher">
+          <div class="user-avatar admin">AD</div>
+          <span class="user-name">Admin</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="btn btn-primary" id="addFlagBtn">+ New Flag</button>
+        <a href="user.html" class="btn btn-ghost">User Portal →</a>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+      <div id="flagsList" class="flags-list">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <div>Loading feature flags...</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Side Panel -->
+    <aside class="side-panel" id="sidePanel"></aside>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal" id="modal"></div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="ui.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
