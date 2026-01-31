@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Checkout</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-title">Payment Checkout</div>
+    </header>
+
+    <main class="main-content">
+      <div id="errorAlert" class="alert alert-error hidden"></div>
+
+      <!-- Order Form Section -->
+      <section id="orderSection" class="card">
+        <h2 class="card-title">Create Order</h2>
+        <form id="orderForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="amount">Amount (in cents)</label>
+              <input type="number" id="amount" name="amount" min="50" value="1000" required>
+            </div>
+            <div class="form-group">
+              <label for="currency">Currency</label>
+              <select id="currency" name="currency" required>
+                <option value="usd">USD</option>
+                <option value="eur">EUR</option>
+                <option value="gbp">GBP</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="description">Description</label>
+            <input type="text" id="description" name="description" placeholder="Order description" value="Test order">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Create Order</button>
+        </form>
+      </section>
+
+      <!-- Payment Section -->
+      <section id="paymentSection" class="card hidden">
+        <h2 class="card-title">Order Summary</h2>
+        <div id="orderDetails" class="order-details"></div>
+
+        <div class="payment-options">
+          <p style="color: #a0a0a0; margin-bottom: 12px; font-size: 14px;">Choose payment method:</p>
+          <button id="checkoutBtn" class="btn btn-success btn-block">Pay with Stripe Checkout</button>
+          <button id="customPayBtn" class="btn btn-primary btn-block" style="margin-top: 8px;">Pay with Card Form</button>
+        </div>
+
+        <button id="newOrderBtn" class="btn btn-secondary btn-block" style="margin-top: 16px;">Create New Order</button>
+      </section>
+    </main>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

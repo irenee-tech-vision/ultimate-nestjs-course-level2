@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Payment</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-title">Payment Checkout</div>
+    </header>
+
+    <main class="main-content">
+      <div id="errorAlert" class="alert alert-error hidden"></div>
+
+      <section class="card">
+        <h2 class="card-title">Complete Your Payment</h2>
+
+        <div id="orderSummary" class="order-details" style="margin-bottom: 24px;"></div>
+
+        <form id="paymentForm">
+          <div id="paymentElement" style="margin-bottom: 24px;"></div>
+          <button type="submit" id="submitBtn" class="btn btn-success btn-block" disabled>
+            Pay Now
+          </button>
+        </form>
+
+        <div id="loadingState" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Loading payment form...</p>
+        </div>
+      </section>
+
+      <div style="text-align: center; margin-top: 16px;">
+        <a href="/" class="btn btn-secondary">Cancel</a>
+      </div>
+    </main>
+  </div>
+
+  <script src="api.js"></script>
+  <script>
+    // Publishable key is safe to expose in frontend code
+    const STRIPE_PUBLISHABLE_KEY = 'pk_test_51Sqs3C3RMn98IVtOgyxG1vlxgP5SDPxivv1BkdKdr9E70sz9aCnUnophuoIN4CIZSlu797qqVno0Q24zToi8qUKL00Y7unH7Ss';
+
+    let stripe;
+    let elements;
+    let orderId;
+
+    const paymentForm = document.getElementById('paymentForm');
+    const paymentElement = document.getElementById('paymentElement');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    const orderSummary = document.getElementById('orderSummary');
+    const loadingState = document.getElementById('loadingState');
+
+    async function initialize() {
+      // Get orderId from URL
+      const params = new URLSearchParams(window.location.search);
+      orderId = params.get('orderId');
+
+      if (!orderId) {
+        showError('No order ID provided. Please create an order first.');
+        loadingState.classList.add('hidden');
+        return;
+      }
+
+      try {
+        // Fetch order details
+        const order = await getOrder(orderId);
+
+        // Display order summary
+        const amountDisplay = (order.amount / 100).toFixed(2);
+        const currencyDisplay = order.currency.toUpperCase();
+        orderSummary.innerHTML = `
+          <div class="order-row">
+            <span class="order-label">Order ID</span>
+            <span class="order-value">${order.id.slice(0, 8)}...</span>
+          </div>
+          <div class="order-row">
+            <span class="order-label">Description</span>
+            <span class="order-value">${escapeHtml(order.description || 'No description')}</span>
+          </div>
+          <div class="order-row">
+            <span class="order-label">Amount</span>
+            <span class="order-value amount">${currencyDisplay} ${amountDisplay}</span>
+          </div>
+        `;
+
+        // Initialize Stripe with hardcoded publishable key
+        stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+
+        // Create PaymentIntent
+        const { clientSecret } = await createPaymentIntent(orderId);
+
+        // Create Elements instance
+        elements = stripe.elements({
+          clientSecret,
+          appearance: {
+            theme: 'night',
+            variables: {
+              colorPrimary: '#4f46e5',
+              colorBackground: '#1e1e2e',
+              colorText: '#e0e0e0',
+              colorDanger: '#ef4444',
+              fontFamily: 'system-ui, sans-serif',
+              borderRadius: '8px',
+            },
+          },
+        });
+
+        // Create and mount Payment Element
+        const paymentElementInstance = elements.create('payment');
+        paymentElementInstance.mount('#paymentElement');
+
+        paymentElementInstance.on('ready', () => {
+          loadingState.classList.add('hidden');
+          paymentForm.style.display = 'block';
+          submitBtn.disabled = false;
+        });
+
+        paymentElementInstance.on('change', (event) => {
+          if (event.error) {
+            showError(event.error.message);
+          } else {
+            hideError();
+          }
+        });
+
+      } catch (error) {
+        showError(error.message);
+        loadingState.classList.add('hidden');
+      }
+    }
+
+    paymentForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+      setLoading(true);
+
+      try {
+        const { error } = await stripe.confirmPayment({
+          elements,
+          confirmParams: {
+            return_url: `${window.location.origin}/success.html`,
+          },
+        });
+
+        // This will only be reached if there's an immediate error
+        // (e.g., card declined). Otherwise the user is redirected.
+        if (error) {
+          showError(error.message);
+        }
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    function setLoading(loading) {
+      submitBtn.disabled = loading;
+      submitBtn.innerHTML = loading
+        ? '<div class="loading-spinner"></div> Processing...'
+        : 'Pay Now';
+    }
+
+    function showError(message) {
+      errorAlert.textContent = message;
+      errorAlert.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorAlert.classList.add('hidden');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Hide form until loaded
+    paymentForm.style.display = 'none';
+
+    // Initialize on page load
+    initialize();
+  </script>
+</body>
+</html>
