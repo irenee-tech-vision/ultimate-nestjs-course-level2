@@ -3,6 +3,9 @@ import { STRIPE_CLIENT_TOKEN } from './constant';
 import Stripe from 'stripe';
 import { AppConfigService } from '../app-config/app-config.service';
 import { OrdersService } from '../orders/orders.service';
+import { Repository } from 'typeorm';
+import { Payment } from './entities/payment.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class PaymentsService implements OnModuleInit {
@@ -13,6 +16,8 @@ export class PaymentsService implements OnModuleInit {
     private readonly stripeClient: Stripe,
     private readonly appConfigService: AppConfigService,
     private readonly orderService: OrdersService,
+    @InjectRepository(Payment)
+    private readonly paymentRepository: Repository<Payment>
   ) {}
 
   async onModuleInit() {
@@ -23,6 +28,13 @@ export class PaymentsService implements OnModuleInit {
   async createCheckoutSession(orderId: string) {
     const order = await this.orderService.findOne(orderId);
     const appUrl = this.appConfigService.appUrl;
+
+    const payment = this.paymentRepository.create({
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency
+    });
+    await this.paymentRepository.save(payment)
 
     const session = await this.stripeClient.checkout.sessions.create({
       line_items: [
@@ -45,6 +57,9 @@ export class PaymentsService implements OnModuleInit {
     this.logger.log(
       `Checkout session ${session.id} created for order ${orderId}`,
     );
+
+    payment.stripeCheckoutSessionId = session.id;
+    await this.paymentRepository.save(payment)
 
     return {
       url: session.url,
