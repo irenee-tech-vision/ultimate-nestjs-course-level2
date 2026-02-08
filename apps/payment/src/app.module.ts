@@ -5,6 +5,7 @@ import { join } from 'path';
 import { AppConfigModule } from './app-config/app-config.module';
 import { AppConfigService } from './app-config/app-config.service';
 import { OrdersModule } from './orders/orders.module';
+import { PaymentsModule } from './payments/payments.module';
 
 const CLIENT_ROOT_PATH = join(
   __dirname,
@@ -27,6 +28,7 @@ const CLIENT_ROOT_PATH = join(
       inject: [AppConfigService],
     }),
     OrdersModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

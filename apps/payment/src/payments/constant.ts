@@ -1,0 +1,1 @@
+export const STRIPE_CLIENT_TOKEN = Symbol('STRIPE_CLIENT');

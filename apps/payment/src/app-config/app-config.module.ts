@@ -14,6 +14,8 @@ import { AppConfigService } from './app-config.service';
         ORM_DATABASE: Joi.string().default('postgres'),
         ORM_AUTO_LOAD_ENTITIES: Joi.boolean().default(true),
         ORM_SYNCHRONIZE: Joi.boolean().default(false),
+        STRIPE_SECRET_KEY: Joi.string().required(),
+        APP_URL: Joi.string().default('http://localhost:3000'),
       }),
     }),
   ],
