@@ -17,6 +17,9 @@ export class Payment {
   @Column({ nullable: true })
   stripeCheckoutSessionId: string;
 
+  @Column({ nullable: true })
+  stripePaymentIntentId: string;
+
   @Column()
   orderId: string;
 

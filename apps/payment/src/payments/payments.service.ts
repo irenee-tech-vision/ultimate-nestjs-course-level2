@@ -17,12 +17,47 @@ export class PaymentsService implements OnModuleInit {
     private readonly appConfigService: AppConfigService,
     private readonly orderService: OrdersService,
     @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>
+    private readonly paymentRepository: Repository<Payment>,
   ) {}
 
   async onModuleInit() {
     await this.stripeClient.customers.list({ limit: 1 });
     this.logger.log('Stripe client initialized');
+  }
+
+  async createPaymentIntent(orderId: string) {
+    const order = await this.orderService.findOne(orderId);
+
+    const payment = this.paymentRepository.create({
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    });
+    await this.paymentRepository.save(payment);
+
+    const paymentIntent = await this.stripeClient.paymentIntents.create({
+      amount: order.amount,
+      currency: order.currency,
+      metadata: {
+        payment: payment.id,
+        orderId,
+      },
+      payment_method_types: ['card']
+    });
+
+    payment.stripePaymentIntentId = paymentIntent.id;
+    await this.paymentRepository.save(payment)
+
+    this.logger.debug(`Payment intent created for order ${orderId}`, {
+      paymentIntentIt: paymentIntent.id,
+      paymentId: payment.id,
+      orderId,
+    });
+
+    return {
+      clientSecret: paymentIntent.client_secret,
+      paymentId: payment.id 
+    }
   }
 
   async createCheckoutSession(orderId: string) {
@@ -32,9 +67,9 @@ export class PaymentsService implements OnModuleInit {
     const payment = this.paymentRepository.create({
       orderId: order.id,
       amount: order.amount,
-      currency: order.currency
+      currency: order.currency,
     });
-    await this.paymentRepository.save(payment)
+    await this.paymentRepository.save(payment);
 
     const session = await this.stripeClient.checkout.sessions.create({
       line_items: [
@@ -59,7 +94,7 @@ export class PaymentsService implements OnModuleInit {
     );
 
     payment.stripeCheckoutSessionId = session.id;
-    await this.paymentRepository.save(payment)
+    await this.paymentRepository.save(payment);
 
     return {
       url: session.url,
