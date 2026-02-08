@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
-import { STRIPE_CLIENT_TOKEN } from './constant';
-import { AppConfigService } from '../app-config/app-config.service';
-import { AppConfigModule } from '../app-config/app-config.module';
-import { PaymentsService } from './payments.service';
-import Stripe from 'stripe';
-import { OrdersModule } from '../orders/orders.module';
-import { PaymentsController } from './payments.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import Stripe from 'stripe';
+import { AppConfigModule } from '../app-config/app-config.module';
+import { AppConfigService } from '../app-config/app-config.service';
+import { OrdersModule } from '../orders/orders.module';
+import { STRIPE_CLIENT_TOKEN } from './constant';
 import { Payment } from './entities/payment.entity';
+import { PaymentsController } from './payments.controller';
+import { PaymentsService } from './payments.service';
+import { WebhooksController } from './webhooks.controller';
 
 @Module({
   imports: [AppConfigModule, OrdersModule, TypeOrmModule.forFeature([Payment])],
@@ -21,6 +22,6 @@ import { Payment } from './entities/payment.entity';
     },
     PaymentsService,
   ],
-  controllers: [PaymentsController],
+  controllers: [PaymentsController, WebhooksController],
 })
 export class PaymentsModule {}

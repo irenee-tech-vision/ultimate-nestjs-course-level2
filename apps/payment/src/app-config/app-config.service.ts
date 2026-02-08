@@ -28,4 +28,8 @@ export class AppConfigService {
   get appUrl(): string {
     return this.configService.getOrThrow<string>('APP_URL');
   }
+
+  get stripeWebhookSecret(): string {
+    return this.configService.getOrThrow<string>('STRIPE_WEBHOOK_SECRET');
+  }
 }

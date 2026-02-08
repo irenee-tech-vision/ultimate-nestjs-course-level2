@@ -16,6 +16,7 @@ import { AppConfigService } from './app-config.service';
         ORM_SYNCHRONIZE: Joi.boolean().default(false),
         STRIPE_SECRET_KEY: Joi.string().required(),
         APP_URL: Joi.string().default('http://localhost:3000'),
+        STRIPE_WEBHOOK_SECRET: Joi.string().required()
       }),
     }),
   ],
