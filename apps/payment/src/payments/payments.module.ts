@@ -9,9 +9,14 @@ import { Payment } from './entities/payment.entity';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { WebhooksController } from './webhooks.controller';
+import { StripeEvent } from './entities/stripe.entity';
 
 @Module({
-  imports: [AppConfigModule, OrdersModule, TypeOrmModule.forFeature([Payment])],
+  imports: [
+    AppConfigModule,
+    OrdersModule,
+    TypeOrmModule.forFeature([Payment, StripeEvent]),
+  ],
   providers: [
     {
       provide: STRIPE_CLIENT_TOKEN,

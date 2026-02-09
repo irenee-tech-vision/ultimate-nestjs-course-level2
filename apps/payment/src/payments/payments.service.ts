@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { STRIPE_CLIENT_TOKEN } from './constant';
 import Stripe from 'stripe';
 import { AppConfigService } from '../app-config/app-config.service';
@@ -26,6 +26,8 @@ export class PaymentsService implements OnModuleInit {
   }
 
   async createPaymentIntent(orderId: string) {
+    await this.preventAlreadyPaid(orderId);
+    
     const order = await this.orderService.findOne(orderId);
 
     const payment = this.paymentRepository.create({
@@ -61,6 +63,8 @@ export class PaymentsService implements OnModuleInit {
   }
 
   async createCheckoutSession(orderId: string) {
+    await this.preventAlreadyPaid(orderId);
+
     const order = await this.orderService.findOne(orderId);
     const appUrl = this.appConfigService.appUrl;
 
@@ -124,5 +128,14 @@ export class PaymentsService implements OnModuleInit {
       stripePaymentIntentId,
     });
     this.logger.log(`Payment ${paymentId} marked as failed`);
+  }
+
+  private async preventAlreadyPaid(orderId: string): Promise<void> {
+    const existingSuccess = await this.paymentRepository.findOne({
+      where: { orderId, status: PaymentStatus.SUCCEEDED },
+    });
+    if (existingSuccess) {
+      throw new ConflictException('Order already paid');
+    }
   }
 }

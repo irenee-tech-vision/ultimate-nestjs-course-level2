@@ -11,6 +11,9 @@ import { AppConfigService } from '../app-config/app-config.service';
 import { STRIPE_CLIENT_TOKEN } from './constant';
 import Stripe from 'stripe';
 import { PaymentsService } from './payments.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { StripeEvent } from './entities/stripe.entity';
+import { Repository } from 'typeorm';
 
 @Controller('webhooks')
 export class WebhooksController {
@@ -21,6 +24,8 @@ export class WebhooksController {
     private readonly stripeClient: Stripe,
     private readonly appConfigService: AppConfigService,
     private readonly paymentService: PaymentsService,
+    @InjectRepository(StripeEvent)
+    private readonly stripeEventRepository: Repository<StripeEvent>,
   ) {}
 
   @Post('stripe')
@@ -45,6 +50,17 @@ export class WebhooksController {
     }
 
     this.logger.log(`Event of type ${event.type}`);
+
+    const existingEvent = await this.stripeEventRepository.findOne({
+      where: { id: event.id },
+    });
+
+    if (existingEvent) {
+      this.logger.log(`Event ${event.id} already processed`);
+      return;
+    }
+
+    await this.stripeEventRepository.save({ id: event.id });
 
     switch (event.type) {
       case 'payment_intent.succeeded':
