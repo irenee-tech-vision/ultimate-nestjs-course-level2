@@ -28,6 +28,15 @@
         "tsConfigPath": "apps/hello-world/tsconfig.app.json"
       }
     },
+    "payment": {
+      "type": "application",
+      "root": "apps/payment",
+      "entryFile": "main",
+      "sourceRoot": "apps/payment/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payment/tsconfig.app.json"
+      }
+    },
     "real-time-communication": {
       "type": "application",
       "root": "apps/real-time-communication",
